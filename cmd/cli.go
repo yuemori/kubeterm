@@ -18,6 +18,7 @@ const version = "0.0.1"
 type Options struct {
 	kubeConfig string
 	version    bool
+	context    string
 }
 
 var opts = &Options{}
@@ -26,6 +27,8 @@ func Run() {
 	cmd := &cobra.Command{}
 	cmd.Use = "kubeterm"
 	cmd.Short = "Kubernetes interactive terminal."
+
+	cmd.Flags().StringVar(&opts.context, "context", opts.context, "Kubernetes context to use. Default to current context configured in kubeconfig.")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		if opts.version {
@@ -67,7 +70,8 @@ func parseConfig(args []string) (*kubeterm.Config, error) {
 	}
 
 	return &kubeterm.Config{
-		KubeConfig: kubeConfig,
+		KubeConfig:  kubeConfig,
+		ContextName: opts.context,
 	}, nil
 }
 

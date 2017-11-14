@@ -1,5 +1,6 @@
 package kubeterm
 
 type Config struct {
-	KubeConfig string
+	KubeConfig  string
+	ContextName string
 }

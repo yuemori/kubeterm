@@ -1,9 +1,0 @@
-package: github.com/yuemori/kubeterm
-import:
-- package: github.com/fatih/color
-- package: github.com/mitchellh/go-homedir
-- package: github.com/pkg/errors
-- package: github.com/spf13/cobra
-- package: k8s.io/client-go
-  subpackages:
-  - 1.5/pkg/labels
