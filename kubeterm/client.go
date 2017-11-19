@@ -28,6 +28,11 @@ func NewClient(config *Config) *Client {
 	return c
 }
 
+func (c *Client) Clear() {
+	c.namespaces = nil
+	c.pods = nil
+}
+
 func (c *Client) Namespaces() *v1.NamespaceList {
 	if c.namespaces == nil {
 		nss, _ := c.client.Namespaces().List(v1.ListOptions{})

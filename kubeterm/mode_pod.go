@@ -11,6 +11,8 @@ type PodMode struct {
 }
 
 func NewPodMode(client *Client, namespace string) *PodMode {
+	client.Clear()
+
 	return &PodMode{
 		client:    client,
 		namespace: namespace,

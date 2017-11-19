@@ -10,6 +10,8 @@ type NamespaceMode struct {
 }
 
 func NewNamespaceMode(client *Client) *NamespaceMode {
+	client.Clear()
+
 	return &NamespaceMode{
 		client: client,
 	}
