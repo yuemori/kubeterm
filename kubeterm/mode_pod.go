@@ -5,18 +5,20 @@ import (
 	"github.com/nsf/termbox-go"
 )
 
-type NamespaceMode struct {
-	client *Client
+type PodMode struct {
+	client    *Client
+	namespace string
 }
 
-func NewNamespaceMode(client *Client) *NamespaceMode {
-	return &NamespaceMode{
-		client: client,
+func NewPodMode(client *Client, namespace string) *PodMode {
+	return &PodMode{
+		client:    client,
+		namespace: namespace,
 	}
 }
 
-func (m *NamespaceMode) Draw(ptr int, width int) error {
-	for y, ns := range m.client.Namespaces().Items {
+func (m *PodMode) Draw(ptr int, width int) error {
+	for y, ns := range m.client.Pods(m.namespace).Items {
 		x := 0
 		fg := termbox.ColorDefault
 		bg := termbox.ColorDefault
@@ -46,11 +48,6 @@ func (m *NamespaceMode) Draw(ptr int, width int) error {
 	return nil
 }
 
-func (m *NamespaceMode) Next(ptr int) Mode {
-	return NewPodMode(m.client, m.current(ptr))
-}
-
-func (m *NamespaceMode) current(ptr int) (namespace string) {
-	nss := m.client.Namespaces().Items
-	return nss[ptr].Name
+func (m *PodMode) Next(ptr int) Mode {
+	return NewPodMode(m.client, m.namespace)
 }

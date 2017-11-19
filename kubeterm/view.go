@@ -1,12 +1,14 @@
 package kubeterm
 
 import (
+	"context"
 	"github.com/nsf/termbox-go"
 	"time"
 )
 
 type Mode interface {
-	Draw(v *View) error
+	Draw(ptr int, width int) error
+	Next(ptr int) Mode
 }
 
 type View struct {
@@ -15,13 +17,13 @@ type View struct {
 	height int
 	top    int
 	ptr    int
+	cancel context.CancelFunc
 	mode   Mode
 }
 
 func NewView(client *Client) *View {
 	w, h := termbox.Size()
-	mode := &NamespaceMode{}
-	mode.Init(client)
+	mode := NewNamespaceMode(client)
 
 	return &View{
 		width:  w,
@@ -65,6 +67,12 @@ func (v *View) updateEvent(ev termbox.Event) {
 		v.width, v.height = ev.Width, ev.Height
 		// v.fixPtr()
 	case termbox.EventKey:
+		switch ev.Key {
+		case termbox.KeyEnter:
+			v.mode = v.mode.Next(v.ptr)
+			v.draw()
+		}
+
 		switch ev.Ch {
 		case 'q':
 			v.quit = true
@@ -106,6 +114,14 @@ func (v *View) calcEnd() int {
 }
 
 func (v *View) draw() {
+	if v.cancel != nil {
+		v.cancel()
+	}
+
+	ctx := context.Background()
+	ctx, cancel := context.WithCancel(ctx)
+	v.cancel = cancel
+
 	ticker := time.NewTicker(50 * time.Millisecond)
 
 	go func() {
@@ -117,13 +133,15 @@ func (v *View) draw() {
 					panic(err)
 				}
 
-				if err := v.mode.Draw(v); err != nil {
+				if err := v.mode.Draw(v.ptr, v.width); err != nil {
 					panic(err)
 				}
 
 				if err := termbox.Flush(); err != nil {
 					panic(err)
 				}
+			case <-ctx.Done():
+				break
 
 			default:
 				// nothing to do
