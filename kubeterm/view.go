@@ -6,15 +6,15 @@ import (
 )
 
 type Mode interface {
-	Draw() error
+	Draw(v *View) error
 }
 
 type View struct {
 	quit   bool
 	width  int
 	height int
-	top    int64
-	ptr    int64
+	top    int
+	ptr    int
 	mode   Mode
 }
 
@@ -26,6 +26,8 @@ func NewView(client *Client) *View {
 	return &View{
 		width:  w,
 		height: h,
+		top:    0,
+		ptr:    0,
 		mode:   mode,
 	}
 }
@@ -66,12 +68,45 @@ func (v *View) updateEvent(ev termbox.Event) {
 		switch ev.Ch {
 		case 'q':
 			v.quit = true
+		case 'j':
+			v.ptr++
+			v.fixPtr()
+		case 'k':
+			v.ptr--
+			v.fixPtr()
 		}
 	}
 }
 
+func (v *View) fixPtr() {
+	if v.ptr < 0 {
+		v.ptr = 0
+	}
+
+	if v.ptr < v.top {
+		v.top = v.ptr
+		return
+	}
+
+	end := v.calcEnd()
+	if v.ptr >= end {
+		v.top += v.ptr - end + 1
+		return
+	}
+}
+
+func (v *View) calcEnd() int {
+	h := v.height - 2
+	if h < 1 {
+		h = 1
+	}
+
+	end := v.top + h
+	return end
+}
+
 func (v *View) draw() {
-	ticker := time.NewTicker(2 * time.Second)
+	ticker := time.NewTicker(50 * time.Millisecond)
 
 	go func() {
 		for {
@@ -82,7 +117,7 @@ func (v *View) draw() {
 					panic(err)
 				}
 
-				if err := v.mode.Draw(); err != nil {
+				if err := v.mode.Draw(v); err != nil {
 					panic(err)
 				}
 
