@@ -50,6 +50,10 @@ func (m *NamespaceMode) Next(ptr int) Mode {
 	return NewPodMode(m.client, m.current(ptr))
 }
 
+func (m *NamespaceMode) Prev() Mode {
+	return nil
+}
+
 func (m *NamespaceMode) current(ptr int) (namespace string) {
 	nss := m.client.Namespaces().Items
 	return nss[ptr].Name

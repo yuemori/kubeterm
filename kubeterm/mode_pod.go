@@ -51,3 +51,7 @@ func (m *PodMode) Draw(ptr int, width int) error {
 func (m *PodMode) Next(ptr int) Mode {
 	return NewPodMode(m.client, m.namespace)
 }
+
+func (m *PodMode) Prev() Mode {
+	return NewNamespaceMode(m.client)
+}

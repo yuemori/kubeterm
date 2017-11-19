@@ -1,7 +1,6 @@
 package kubeterm
 
 import (
-	"context"
 	"github.com/nsf/termbox-go"
 	"time"
 )
@@ -9,6 +8,7 @@ import (
 type Mode interface {
 	Draw(ptr int, width int) error
 	Next(ptr int) Mode
+	Prev() Mode
 }
 
 type View struct {
@@ -17,24 +17,21 @@ type View struct {
 	height int
 	top    int
 	ptr    int
-	cancel context.CancelFunc
 	mode   Mode
 }
 
 func NewView(client *Client) *View {
 	w, h := termbox.Size()
-	mode := NewNamespaceMode(client)
 
 	return &View{
 		width:  w,
 		height: h,
 		top:    0,
 		ptr:    0,
-		mode:   mode,
 	}
 }
 
-func (v *View) Loop() {
+func (v *View) Loop(mode Mode) {
 	evCh := make(chan termbox.Event)
 	go func() {
 		for {
@@ -42,6 +39,8 @@ func (v *View) Loop() {
 		}
 	}()
 
+	termbox.HideCursor()
+	v.mode = mode
 	v.draw()
 
 	tick := time.Tick(time.Second / 2)
@@ -56,7 +55,12 @@ func (v *View) Loop() {
 		}
 
 		if v.quit {
-			break
+			mode := v.mode.Prev()
+			if mode == nil {
+				break
+			}
+			v.quit = false
+			v.mode = mode
 		}
 	}
 }
@@ -70,7 +74,7 @@ func (v *View) updateEvent(ev termbox.Event) {
 		switch ev.Key {
 		case termbox.KeyEnter:
 			v.mode = v.mode.Next(v.ptr)
-			v.draw()
+			v.ptr = 0
 		}
 
 		switch ev.Ch {
@@ -114,21 +118,12 @@ func (v *View) calcEnd() int {
 }
 
 func (v *View) draw() {
-	if v.cancel != nil {
-		v.cancel()
-	}
-
-	ctx := context.Background()
-	ctx, cancel := context.WithCancel(ctx)
-	v.cancel = cancel
-
 	ticker := time.NewTicker(50 * time.Millisecond)
 
 	go func() {
 		for {
 			select {
 			case <-ticker.C:
-				termbox.HideCursor()
 				if err := termbox.Clear(termbox.ColorDefault, termbox.ColorDefault); err != nil {
 					panic(err)
 				}
@@ -140,8 +135,6 @@ func (v *View) draw() {
 				if err := termbox.Flush(); err != nil {
 					panic(err)
 				}
-			case <-ctx.Done():
-				break
 
 			default:
 				// nothing to do

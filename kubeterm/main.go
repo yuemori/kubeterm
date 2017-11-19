@@ -21,7 +21,8 @@ func Run(ctx context.Context, config *Config) error {
 
 	client := NewClient(config)
 	view := NewView(client)
-	view.Loop()
+	mode := NewNamespaceMode(client)
+	view.Loop(mode)
 
 	return nil
 }
