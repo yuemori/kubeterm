@@ -3,26 +3,25 @@ package kubeterm
 import (
 	"context"
 	"fmt"
-
-	"github.com/yuemori/kubeterm/kubernetes"
-	"k8s.io/client-go/pkg/api/v1"
+	"github.com/nsf/termbox-go"
+	"os"
 )
 
+func stdErr(err error) {
+	fmt.Fprintf(os.Stderr, "kome: %v\n", err)
+}
+
 func Run(ctx context.Context, config *Config) error {
-	clientConfig := kubernetes.NewClientConfig(config.KubeConfig, config.ContextName)
-	clientset, err := kubernetes.NewClientSet(clientConfig)
-	if err != nil {
+	// init termbox
+	if err := termbox.Init(); err != nil {
+		stdErr(err)
 		return err
 	}
+	defer termbox.Close()
 
-	pods, err := clientset.CoreV1().Pods("").List(v1.ListOptions{})
-	if err != nil {
-		return err
-	}
-
-	for _, p := range pods.Items {
-		fmt.Printf("Name: %s\n", p.ObjectMeta.Name)
-	}
+	client := NewClient(config)
+	view := NewView(client)
+	view.Loop()
 
 	return nil
 }
