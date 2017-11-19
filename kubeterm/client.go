@@ -2,13 +2,14 @@ package kubeterm
 
 import (
 	"github.com/yuemori/kubeterm/kubernetes"
-	"k8s.io/client-go/kubernetes/typed/core/v1"
 	v1core "k8s.io/client-go/kubernetes/typed/core/v1"
+	v1 "k8s.io/client-go/pkg/api/v1"
 )
 
 type Client struct {
 	client v1core.CoreV1Interface
 	v1core.CoreV1Interface
+	Namespaces *v1.NamespaceList
 }
 
 func NewClient(config *Config) *Client {
@@ -18,15 +19,14 @@ func NewClient(config *Config) *Client {
 		panic(err)
 	}
 
-	return &Client{
-		client: clientset.CoreV1(),
+	client := clientset.CoreV1()
+
+	nss, _ := client.Namespaces().List(v1.ListOptions{})
+
+	c := &Client{
+		client:     clientset.CoreV1(),
+		Namespaces: nss,
 	}
-}
 
-func (c *Client) Namespaces() v1.NamespaceInterface {
-	return c.client.Namespaces()
-}
-
-func (c *Client) Pods(namespace string) v1.PodInterface {
-	return c.client.Pods(namespace)
+	return c
 }
