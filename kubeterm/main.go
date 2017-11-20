@@ -3,7 +3,6 @@ package kubeterm
 import (
 	"context"
 	"fmt"
-	"github.com/nsf/termbox-go"
 	"os"
 )
 
@@ -12,17 +11,9 @@ func stdErr(err error) {
 }
 
 func Run(ctx context.Context, config *Config) error {
-	// init termbox
-	if err := termbox.Init(); err != nil {
-		stdErr(err)
-		return err
-	}
-	defer termbox.Close()
-
 	client := NewClient(config)
 	view := NewView(client)
-	mode := NewNamespaceMode(client)
-	view.Loop(mode)
+	view.Loop(client)
 
 	return nil
 }

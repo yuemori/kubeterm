@@ -1,93 +1,88 @@
 package kubeterm
 
 import (
-	"github.com/nsf/termbox-go"
-	"time"
+	"github.com/jroimartin/gocui"
+	"log"
 )
 
-type Mode interface {
-	Draw(ptr int, width int) error
-	Next(ptr int) Mode
-	Prev() Mode
-}
-
 type View struct {
-	quit   bool
 	width  int
 	height int
 	top    int
 	ptr    int
-	mode   Mode
+	g      *gocui.Gui
 }
 
 func NewView(client *Client) *View {
-	w, h := termbox.Size()
+	g, err := gocui.NewGui(gocui.OutputNormal)
+	if err != nil {
+		log.Panicln(err)
+	}
+	w, h := g.Size()
 
 	return &View{
 		width:  w,
 		height: h,
 		top:    0,
 		ptr:    0,
+		g:      g,
 	}
 }
 
-func (v *View) Loop(mode Mode) {
-	evCh := make(chan termbox.Event)
-	go func() {
-		for {
-			evCh <- termbox.PollEvent()
-		}
-	}()
+func quit(g *gocui.Gui, v *gocui.View) error {
+	return gocui.ErrQuit
+}
 
-	termbox.HideCursor()
-	v.mode = mode
-	v.draw()
+func (v *View) ptrDown(_ *gocui.Gui, _ *gocui.View) error {
+	v.ptr++
+	v.fixPtr()
 
-	tick := time.Tick(time.Second / 2)
-	for {
-		select {
-		case <-tick:
-		case ev := <-evCh:
-			if ev.Type == termbox.EventKey && ev.Key == termbox.KeyCtrlC {
-				return
-			}
-			v.updateEvent(ev)
-		}
+	return nil
+}
 
-		if v.quit {
-			mode := v.mode.Prev()
-			if mode == nil {
-				break
-			}
-			v.quit = false
-			v.mode = mode
-		}
+func (v *View) ptrUp(_ *gocui.Gui, _ *gocui.View) error {
+	v.ptr--
+	v.fixPtr()
+
+	return nil
+}
+
+func (v *View) Loop(client *Client) {
+	defer v.g.Close()
+
+	v.registerKeyBindings()
+
+	menu := NewMenuView(client)
+	menu.Draw(v)
+
+	status := NewStatusView(client)
+	status.Draw(v)
+
+	if err := v.g.MainLoop(); err != nil && err != gocui.ErrQuit {
+		log.Panicln(err)
 	}
 }
 
-func (v *View) updateEvent(ev termbox.Event) {
-	switch ev.Type {
-	case termbox.EventResize:
-		v.width, v.height = ev.Width, ev.Height
-		// v.fixPtr()
-	case termbox.EventKey:
-		switch ev.Key {
-		case termbox.KeyEnter:
-			v.mode = v.mode.Next(v.ptr)
-			v.ptr = 0
-		}
-
-		switch ev.Ch {
-		case 'q':
-			v.quit = true
-		case 'j':
-			v.ptr++
-			v.fixPtr()
-		case 'k':
-			v.ptr--
-			v.fixPtr()
-		}
+func (v *View) SetKeybinding(viewname string, key interface{}, mod gocui.Modifier, handler func(*gocui.Gui, *gocui.View) error) {
+	if err := v.g.SetKeybinding(viewname, key, mod, handler); err != nil {
+		log.Panicln(err)
 	}
+}
+
+func (v *View) SetView(name string, x0, y0, x1, y1 int) *gocui.View {
+	view, err := v.g.SetView(name, x0, y0, x1, y1)
+
+	if err != nil &&
+		err != gocui.ErrUnknownView {
+		log.Panicln(err)
+	}
+
+	return view
+}
+
+func (v *View) registerKeyBindings() {
+	v.SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone, quit)
+	v.SetKeybinding("", 'q', gocui.ModNone, quit)
 }
 
 func (v *View) fixPtr() {
@@ -115,30 +110,4 @@ func (v *View) calcEnd() int {
 
 	end := v.top + h
 	return end
-}
-
-func (v *View) draw() {
-	ticker := time.NewTicker(50 * time.Millisecond)
-
-	go func() {
-		for {
-			select {
-			case <-ticker.C:
-				if err := termbox.Clear(termbox.ColorDefault, termbox.ColorDefault); err != nil {
-					panic(err)
-				}
-
-				if err := v.mode.Draw(v.ptr, v.width); err != nil {
-					panic(err)
-				}
-
-				if err := termbox.Flush(); err != nil {
-					panic(err)
-				}
-
-			default:
-				// nothing to do
-			}
-		}
-	}()
 }

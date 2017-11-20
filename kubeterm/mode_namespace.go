@@ -2,7 +2,7 @@ package kubeterm
 
 import (
 	"fmt"
-	"github.com/nsf/termbox-go"
+	"github.com/jroimartin/gocui"
 )
 
 type NamespaceMode struct {
@@ -17,42 +17,12 @@ func NewNamespaceMode(client *Client) *NamespaceMode {
 	}
 }
 
-func (m *NamespaceMode) Draw(ptr int, width int) error {
-	for y, ns := range m.client.Namespaces().Items {
-		x := 0
-		fg := termbox.ColorDefault
-		bg := termbox.ColorDefault
+func (m *NamespaceMode) Draw(v *gocui.View) {
+	fmt.Fprintln(v, fmt.Sprintf("%-20s\t%-10s\t%-20s", "Name", "Status", "CreationTimestamp"))
 
-		if y == ptr {
-			bg = termbox.ColorGreen
-		}
-
-		for _, ch := range fmt.Sprintf("%02d", y) {
-			termbox.SetCell(x, y, ch, fg, bg)
-			x++
-		}
-
-		termbox.SetCell(x, y, ' ', fg, bg)
-		x++
-
-		for _, ch := range ns.ObjectMeta.Name {
-			termbox.SetCell(x, y, ch, fg, bg)
-			x++
-		}
-
-		for ; x < width; x++ {
-			termbox.SetCell(x, y, ' ', termbox.ColorDefault, bg)
-		}
-	}
-
-	return nil
-}
-
-func (m *NamespaceMode) Next(ptr int) Mode {
 	nss := m.client.Namespaces().Items
-	return NewPodMode(m.client, nss[ptr].Name)
-}
 
-func (m *NamespaceMode) Prev() Mode {
-	return nil
+	for _, ns := range nss {
+		fmt.Fprintln(v, fmt.Sprintf("%-20s\t%-10s\t%-20s", ns.ObjectMeta.Name, ns.Status.Phase, ns.ObjectMeta.CreationTimestamp.Time))
+	}
 }
