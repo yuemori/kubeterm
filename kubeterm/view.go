@@ -5,54 +5,18 @@ import (
 	"log"
 )
 
-type View struct {
-	Width  int
-	Height int
-	g      *gocui.Gui
+type View interface {
+	Name() string
+	Open(a *App, v *gocui.View)
+	Close()
 }
 
-func NewView(client *Client) *View {
-	g, err := gocui.NewGui(gocui.OutputNormal)
-	if err != nil {
-		log.Panicln(err)
-	}
-	w, h := g.Size()
-
-	return &View{
-		Width:  w,
-		Height: h,
-		g:      g,
-	}
+func (a *App) AppendView(v View) {
+	a.views = append(a.views, v)
 }
 
-func quit(g *gocui.Gui, v *gocui.View) error {
-	return gocui.ErrQuit
-}
-
-func (v *View) Loop(client *Client) {
-	defer v.g.Close()
-
-	v.registerKeyBindings()
-
-	menu := NewMenuView(client)
-	menu.Draw(v)
-
-	status := NewStatusView(client)
-	status.Draw(v)
-
-	if err := v.g.MainLoop(); err != nil && err != gocui.ErrQuit {
-		log.Panicln(err)
-	}
-}
-
-func (v *View) SetKeybinding(viewname string, key interface{}, mod gocui.Modifier, handler func(*gocui.Gui, *gocui.View) error) {
-	if err := v.g.SetKeybinding(viewname, key, mod, handler); err != nil {
-		log.Panicln(err)
-	}
-}
-
-func (v *View) SetView(name string, x0, y0, x1, y1 int) *gocui.View {
-	view, err := v.g.SetView(name, x0, y0, x1, y1)
+func (a *App) OpenView(v View, x0, y0, x1, y1 int) {
+	view, err := a.g.SetView(v.Name(), x0, y0, x1, y1)
 
 	view.Frame = false
 
@@ -61,10 +25,29 @@ func (v *View) SetView(name string, x0, y0, x1, y1 int) *gocui.View {
 		log.Panicln(err)
 	}
 
-	return view
+	v.Open(a, view)
+	a.AppendView(v)
 }
 
-func (v *View) registerKeyBindings() {
-	v.SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone, quit)
-	v.SetKeybinding("", 'q', gocui.ModNone, quit)
+func (a *App) SetCurrentView(v View) {
+	_, err := a.g.SetCurrentView(v.Name())
+
+	if err != nil && err != gocui.ErrUnknownView {
+		log.Panicln(err)
+	}
+}
+
+func (a *App) SetViewKeybinding(v View, key interface{}, mod gocui.Modifier, handler func() error) {
+
+	a.setKeybinding(v.Name(), key, mod, handler)
+}
+
+func (a *App) setKeybinding(viewname string, key interface{}, mod gocui.Modifier, handler func() error) {
+	f := func(*gocui.Gui, *gocui.View) error {
+		return handler()
+	}
+
+	if err := a.g.SetKeybinding(viewname, key, mod, f); err != nil {
+		log.Panicln(err)
+	}
 }

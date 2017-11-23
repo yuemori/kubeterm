@@ -12,8 +12,8 @@ func stdErr(err error) {
 
 func Run(ctx context.Context, config *Config) error {
 	client := NewClient(config)
-	view := NewView(client)
-	view.Loop(client)
+	app := NewApp(client)
+	app.MainLoop()
 
 	return nil
 }
