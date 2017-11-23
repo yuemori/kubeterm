@@ -6,10 +6,8 @@ import (
 )
 
 type View struct {
-	width  int
-	height int
-	top    int
-	ptr    int
+	Width  int
+	Height int
 	g      *gocui.Gui
 }
 
@@ -21,30 +19,14 @@ func NewView(client *Client) *View {
 	w, h := g.Size()
 
 	return &View{
-		width:  w,
-		height: h,
-		top:    0,
-		ptr:    0,
+		Width:  w,
+		Height: h,
 		g:      g,
 	}
 }
 
 func quit(g *gocui.Gui, v *gocui.View) error {
 	return gocui.ErrQuit
-}
-
-func (v *View) ptrDown(_ *gocui.Gui, _ *gocui.View) error {
-	v.ptr++
-	v.fixPtr()
-
-	return nil
-}
-
-func (v *View) ptrUp(_ *gocui.Gui, _ *gocui.View) error {
-	v.ptr--
-	v.fixPtr()
-
-	return nil
 }
 
 func (v *View) Loop(client *Client) {
@@ -72,6 +54,8 @@ func (v *View) SetKeybinding(viewname string, key interface{}, mod gocui.Modifie
 func (v *View) SetView(name string, x0, y0, x1, y1 int) *gocui.View {
 	view, err := v.g.SetView(name, x0, y0, x1, y1)
 
+	view.Frame = false
+
 	if err != nil &&
 		err != gocui.ErrUnknownView {
 		log.Panicln(err)
@@ -83,31 +67,4 @@ func (v *View) SetView(name string, x0, y0, x1, y1 int) *gocui.View {
 func (v *View) registerKeyBindings() {
 	v.SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone, quit)
 	v.SetKeybinding("", 'q', gocui.ModNone, quit)
-}
-
-func (v *View) fixPtr() {
-	if v.ptr < 0 {
-		v.ptr = 0
-	}
-
-	if v.ptr < v.top {
-		v.top = v.ptr
-		return
-	}
-
-	end := v.calcEnd()
-	if v.ptr >= end {
-		v.top += v.ptr - end + 1
-		return
-	}
-}
-
-func (v *View) calcEnd() int {
-	h := v.height - 2
-	if h < 1 {
-		h = 1
-	}
-
-	end := v.top + h
-	return end
 }

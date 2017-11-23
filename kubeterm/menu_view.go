@@ -25,7 +25,7 @@ func initialDrawer(c *Client) Drawer {
 }
 
 func (m *MenuView) Draw(v *View) {
-	vctx := v.SetView("namespace", -1, -1, v.width/4, v.height/3)
+	vctx := v.SetView("namespace", -1, -1, v.Width/4, v.Height/3)
 
 	m.drawer.Draw(vctx)
 }

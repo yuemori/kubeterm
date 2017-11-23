@@ -19,7 +19,7 @@ func initialStatusDrawer(c *Client) Drawer {
 }
 
 func (m *StatusView) Draw(view *View) {
-	v := view.SetView("status", view.width/4, -1, view.width, view.height/3)
+	v := view.SetView("status", view.Width/4, -1, view.Width, view.Height/3)
 
 	m.drawer.Draw(v)
 }
