@@ -16,7 +16,8 @@ const (
 )
 
 type App struct {
-	g *gocui.Gui
+	g      *gocui.Gui
+	client *Client
 
 	MaxHeight int
 	MaxWidth  int
@@ -32,6 +33,7 @@ func NewApp(client *Client) *App {
 
 	w, h := g.Size()
 	app := &App{
+		client:    client,
 		MaxHeight: h,
 		MaxWidth:  w,
 		g:         g,
@@ -45,17 +47,23 @@ func (a *App) MainLoop() {
 	defer a.g.Close()
 
 	a.setKeybinding("", KeyCtrlC, ModNone, a.Quit)
-	a.openMenu()
+	a.openMenuView()
+	a.openNamespaceView()
 
 	if err := a.g.MainLoop(); err != nil && err != gocui.ErrQuit {
 		log.Panicln(err)
 	}
 }
 
-func (a *App) openMenu() {
-	m := NewMenuView()
-	a.OpenView(m, 0, 0, a.MaxWidth/3, a.MaxHeight)
-	a.SetCurrentView(m)
+func (a *App) openMenuView() {
+	v := NewMenuView()
+	a.OpenView(v, 0, 0, 20, a.MaxHeight)
+	a.SetCurrentView(v)
+}
+
+func (a *App) openNamespaceView() {
+	v := NewNamespaceView()
+	a.OpenView(v, 20, 0, a.MaxWidth, a.MaxHeight)
 }
 
 func (a *App) Quit() error {

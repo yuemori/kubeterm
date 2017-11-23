@@ -5,13 +5,13 @@ import (
 	v1core "k8s.io/client-go/kubernetes/typed/core/v1"
 	v1 "k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/pkg/watch"
+	"log"
 )
 
 type Client struct {
 	client v1core.CoreV1Interface
 	v1core.CoreV1Interface
-	namespaces *v1.NamespaceList
-	pods       *v1.PodList
+	pods *v1.PodList
 }
 
 func NewClient(config *Config) *Client {
@@ -29,20 +29,17 @@ func NewClient(config *Config) *Client {
 }
 
 func (c *Client) Clear() {
-	c.namespaces = nil
 	c.pods = nil
 }
 
 func (c *Client) Namespaces() *v1.NamespaceList {
-	if c.namespaces == nil {
-		nss, _ := c.client.Namespaces().List(v1.ListOptions{})
-		c.namespaces = nss
-		if err := c.watchNamespace(); err != nil {
-			panic(err)
-		}
+	nss, err := c.client.Namespaces().List(v1.ListOptions{})
+
+	if err != nil {
+		log.Panicln(err)
 	}
 
-	return c.namespaces
+	return nss
 }
 
 func (c *Client) Pods(namespace string) *v1.PodList {
@@ -83,28 +80,12 @@ func (c *Client) watchPod(namespace string) error {
 	return nil
 }
 
-func (c *Client) watchNamespace() error {
+func (c *Client) WatchNamespace() watch.Interface {
 	watcher, err := c.client.Namespaces().Watch(v1.ListOptions{Watch: true})
 
 	if err != nil {
-		return err
+		log.Panicln(err)
 	}
 
-	go func() {
-		for {
-			select {
-			case e := <-watcher.ResultChan():
-				switch e.Type {
-				case watch.Added:
-					nss, _ := c.client.Namespaces().List(v1.ListOptions{})
-					c.namespaces = nss
-				case watch.Deleted:
-					nss, _ := c.client.Namespaces().List(v1.ListOptions{})
-					c.namespaces = nss
-				}
-			}
-		}
-	}()
-
-	return nil
+	return watcher
 }

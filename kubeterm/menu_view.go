@@ -17,7 +17,7 @@ var (
 )
 
 type MenuView struct {
-	v     *gocui.View
+	gv    *gocui.View
 	done  chan struct{}
 	dirty bool
 }
@@ -31,30 +31,30 @@ func NewMenuView() *MenuView {
 	return m
 }
 
-func (m *MenuView) Open(a *App, v *gocui.View) {
-	m.v = v
-	a.SetViewKeybinding(m, 'q', ModNone, a.Quit)
-	a.SetViewKeybinding(m, 'j', ModNone, m.ptrDown)
-	a.SetViewKeybinding(m, 'k', ModNone, m.ptrUp)
-	a.SetViewKeybinding(m, KeyEnter, ModNone, m.enter)
-	v.Highlight = true
-	v.SelBgColor = gocui.ColorRed
-	v.SelFgColor = gocui.ColorGreen
+func (v *MenuView) Open(a *App, gv *gocui.View) {
+	v.gv = gv
+	a.SetViewKeybinding(v, 'q', ModNone, a.Quit)
+	a.SetViewKeybinding(v, 'j', ModNone, v.ptrDown)
+	a.SetViewKeybinding(v, 'k', ModNone, v.ptrUp)
+	a.SetViewKeybinding(v, KeyEnter, ModNone, v.enter)
+	gv.Highlight = true
+	gv.SelBgColor = gocui.ColorRed
+	gv.SelFgColor = gocui.ColorGreen
 
 	tick := time.Tick(50 * time.Millisecond)
 
-	m.draw()
+	v.draw()
 
 	go func() {
 		for {
 			select {
-			case <-m.done:
+			case <-v.done:
 				return
 			case <-tick:
-				if m.dirty == true {
-					m.dirty = false
-					m.clear()
-					m.draw()
+				if v.dirty == true {
+					v.dirty = false
+					v.clear()
+					v.draw()
 				}
 			default:
 			}
@@ -62,58 +62,58 @@ func (m *MenuView) Open(a *App, v *gocui.View) {
 	}()
 }
 
-func (m *MenuView) enter() error {
+func (v *MenuView) enter() error {
 	return nil
 }
 
-func (m *MenuView) Close() {
-	close(m.done)
+func (v *MenuView) Close() {
+	close(v.done)
 }
 
-func (m *MenuView) clear() {
-	m.v.Clear()
+func (v *MenuView) clear() {
+	v.gv.Clear()
 }
 
-func (m *MenuView) draw() {
+func (v *MenuView) draw() {
 	for _, str := range MenuLines {
-		fmt.Fprintln(m.v, str)
+		fmt.Fprintln(v.gv, str)
 	}
 }
 
-func (m *MenuView) Name() string {
+func (v *MenuView) Name() string {
 	return "menu"
 }
 
-func (m *MenuView) ptrDown() error {
-	x, y := m.v.Cursor()
+func (v *MenuView) ptrDown() error {
+	x, y := v.gv.Cursor()
 	next := y + 1
 
 	if next > len(MenuLines)-1 {
 		next = y
 	}
 
-	if err := m.v.SetCursor(x, next); err != nil {
+	if err := v.gv.SetCursor(x, next); err != nil {
 		return err
 	}
 
-	m.dirty = true
+	v.dirty = true
 
 	return nil
 }
 
-func (m *MenuView) ptrUp() error {
-	x, y := m.v.Cursor()
+func (v *MenuView) ptrUp() error {
+	x, y := v.gv.Cursor()
 	next := y - 1
 
 	if next < 0 {
 		next = 0
 	}
 
-	if err := m.v.SetCursor(x, next); err != nil {
+	if err := v.gv.SetCursor(x, next); err != nil {
 		return err
 	}
 
-	m.dirty = true
+	v.dirty = true
 
 	return nil
 }
