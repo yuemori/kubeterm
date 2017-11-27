@@ -15,6 +15,8 @@ type MenuView struct {
 
 type MenuItem interface {
 	DisplayName() string
+	OnEnter()
+	View
 }
 
 func NewMenuView() *MenuView {
@@ -32,7 +34,15 @@ func (v *MenuView) Open(a *App, gv *gocui.View) {
 	a.SetViewKeybinding(v, 'q', ModNone, a.Quit)
 	a.SetViewKeybinding(v, 'j', ModNone, v.ptrDown)
 	a.SetViewKeybinding(v, 'k', ModNone, v.ptrUp)
-	a.SetViewKeybinding(v, KeyEnter, ModNone, v.enter)
+	a.SetViewKeybinding(v, KeyEnter, ModNone, func() error {
+		_, y := v.gv.Cursor()
+		item := v.items[y]
+		item.OnEnter()
+		a.SetViewOnTop(item)
+
+		return nil
+	})
+
 	gv.Highlight = true
 	gv.SelBgColor = gocui.ColorRed
 	gv.SelFgColor = gocui.ColorGreen
@@ -56,10 +66,6 @@ func (v *MenuView) Open(a *App, gv *gocui.View) {
 			}
 		}
 	}()
-}
-
-func (v *MenuView) enter() error {
-	return nil
 }
 
 func (v *MenuView) AddMenu(item MenuItem) {

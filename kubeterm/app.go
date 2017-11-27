@@ -49,7 +49,10 @@ func (a *App) MainLoop() {
 	var items []MenuItem
 
 	a.setKeybinding("", KeyCtrlC, ModNone, a.Quit)
-	items = append(items, a.openNamespaceView())
+	nv := a.openNamespaceView()
+	items = append(items, nv)
+	items = append(items, a.openPodView())
+	a.SetViewOnTop(nv)
 	a.openMenuView(items)
 
 	if err := a.g.MainLoop(); err != nil && err != gocui.ErrQuit {
@@ -67,8 +70,14 @@ func (a *App) openMenuView(items []MenuItem) {
 	a.SetCurrentView(v)
 }
 
-func (a *App) openNamespaceView() MenuItem {
+func (a *App) openNamespaceView() *NamespaceView {
 	v := NewNamespaceView()
+	a.OpenView(v, 20, 0, a.MaxWidth, a.MaxHeight)
+	return v
+}
+
+func (a *App) openPodView() *PodView {
+	v := NewPodView("kube-system")
 	a.OpenView(v, 20, 0, a.MaxWidth, a.MaxHeight)
 	return v
 }

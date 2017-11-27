@@ -50,3 +50,11 @@ func (a *App) setKeybinding(viewname string, key interface{}, mod gocui.Modifier
 		log.Panicln(err)
 	}
 }
+
+func (a *App) SetViewOnTop(v View) {
+	_, err := a.g.SetViewOnTop(v.Name())
+
+	if err != nil && err != gocui.ErrUnknownView {
+		log.Panicln(err)
+	}
+}

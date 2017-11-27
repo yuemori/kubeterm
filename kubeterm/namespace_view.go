@@ -48,5 +48,8 @@ func (v *NamespaceView) Name() string {
 }
 
 func (v *NamespaceView) DisplayName() string {
-	return "Namespace"
+	return "Namespaces"
+}
+
+func (v *NamespaceView) OnEnter() {
 }
