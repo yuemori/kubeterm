@@ -9,13 +9,15 @@ import (
 )
 
 type NamespaceView struct {
+	client  *Client
 	watcher watch.Interface
 	items   []v1.Namespace
 }
 
-func NewNamespaceView() *NamespaceView {
+func NewNamespaceView(client *Client) *NamespaceView {
 	return &NamespaceView{
-		items: []v1.Namespace{},
+		client: client,
+		items:  []v1.Namespace{},
 	}
 }
 
@@ -28,7 +30,7 @@ func (v *NamespaceView) Open(a *App, gv *gocui.View) {
 	a.SetViewKeybinding(v, 'k', ModNone, v.ptrUp)
 	a.SetViewKeybinding(v, KeyEnter, ModNone, v.enter)
 
-	watcher := a.client.WatchNamespace(func(nss *v1.NamespaceList) {
+	watcher := v.client.WatchNamespace(func(nss *v1.NamespaceList) {
 		a.Update(func() error { return v.update(gv, nss) })
 	})
 

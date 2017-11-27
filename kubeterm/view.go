@@ -5,17 +5,17 @@ import (
 	"log"
 )
 
-type View interface {
+type ViewContext interface {
 	Name() string
 	Open(a *App, v *gocui.View)
 	Close()
 }
 
-func (a *App) AppendView(v View) {
+func (a *App) AppendView(v ViewContext) {
 	a.views = append(a.views, v)
 }
 
-func (a *App) OpenView(v View, x0, y0, x1, y1 int) {
+func (a *App) OpenView(v ViewContext, x0, y0, x1, y1 int) {
 	view, err := a.g.SetView(v.Name(), x0, y0, x1, y1)
 
 	view.Frame = false
@@ -29,7 +29,7 @@ func (a *App) OpenView(v View, x0, y0, x1, y1 int) {
 	a.AppendView(v)
 }
 
-func (a *App) SetCurrentView(v View) {
+func (a *App) SetCurrentView(v ViewContext) {
 	_, err := a.g.SetCurrentView(v.Name())
 
 	if err != nil && err != gocui.ErrUnknownView {
@@ -37,7 +37,7 @@ func (a *App) SetCurrentView(v View) {
 	}
 }
 
-func (a *App) SetViewKeybinding(v View, key interface{}, mod gocui.Modifier, handler func(*App, *gocui.View) error) {
+func (a *App) SetViewKeybinding(v ViewContext, key interface{}, mod gocui.Modifier, handler func(*App, *gocui.View) error) {
 	a.setKeybinding(v.Name(), key, mod, handler)
 }
 
@@ -51,7 +51,7 @@ func (a *App) setKeybinding(viewname string, key interface{}, mod gocui.Modifier
 	}
 }
 
-func (a *App) SetViewOnTop(v View) {
+func (a *App) SetViewOnTop(v ViewContext) {
 	_, err := a.g.SetViewOnTop(v.Name())
 
 	if err != nil && err != gocui.ErrUnknownView {
@@ -64,7 +64,7 @@ func (a *App) Update(handler func() error) {
 	a.g.Update(f)
 }
 
-func (a *App) GetGoCuiView(v View) *gocui.View {
+func (a *App) GetGoCuiView(v ViewContext) *gocui.View {
 	gv, err := a.g.View(v.Name())
 
 	if err != nil && err != gocui.ErrUnknownView {

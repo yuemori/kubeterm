@@ -11,13 +11,15 @@ import (
 
 type PodView struct {
 	watcher   watch.Interface
+	client    *Client
 	namespace string
 	items     []v1.Pod
 }
 
-func NewPodView(ns string) *PodView {
+func NewPodView(ns string, client *Client) *PodView {
 	return &PodView{
 		namespace: ns,
+		client:    client,
 		items:     []v1.Pod{},
 	}
 }
@@ -85,7 +87,7 @@ func (v *PodView) init(ns string, a *App, gv *gocui.View) {
 
 	v.update(gv, &v1.PodList{Items: v.items})
 
-	watcher := a.client.WatchPod(ns, func(pods *v1.PodList) {
+	watcher := v.client.WatchPod(ns, func(pods *v1.PodList) {
 		a.Update(func() error {
 			return v.update(gv, pods)
 		})

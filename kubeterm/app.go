@@ -17,14 +17,13 @@ const (
 
 type App struct {
 	g      *gocui.Gui
-	client *Client
+	Client *Client
 	menu   *MenuView
 
-	MaxHeight        int
-	MaxWidth         int
+	Window           *Window
 	currentNamespace string
 
-	views []View
+	views []ViewContext
 }
 
 func NewApp(client *Client) *App {
@@ -33,13 +32,11 @@ func NewApp(client *Client) *App {
 		log.Panicln(err)
 	}
 
-	w, h := g.Size()
 	app := &App{
-		client:    client,
-		MaxHeight: h,
-		MaxWidth:  w,
-		g:         g,
-		views:     []View{},
+		Client: client,
+		Window: NewWindow(),
+		g:      g,
+		views:  []ViewContext{},
 	}
 
 	return app
@@ -82,21 +79,21 @@ func (a *App) openMenuView(items []MenuItem) *MenuView {
 		v.AddMenu(item)
 	}
 
-	a.OpenView(v, 0, 0, 20, a.MaxHeight)
+	a.OpenView(v, 0, 0, 20, a.Window.Height)
 	a.SetCurrentView(v)
 
 	return v
 }
 
 func (a *App) openNamespaceView() *NamespaceView {
-	v := NewNamespaceView()
-	a.OpenView(v, 20, 0, a.MaxWidth, a.MaxHeight)
+	v := NewNamespaceView(a.Client)
+	a.OpenView(v, 20, 0, a.Window.Width, a.Window.Height)
 	return v
 }
 
 func (a *App) openPodView() *PodView {
-	v := NewPodView(a.CurrentNamespace())
-	a.OpenView(v, 20, 0, a.MaxWidth, a.MaxHeight)
+	v := NewPodView(a.CurrentNamespace(), a.Client)
+	a.OpenView(v, 20, 0, a.Window.Width, a.Window.Height)
 	return v
 }
 

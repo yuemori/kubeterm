@@ -14,7 +14,7 @@ type MenuItem interface {
 	DisplayName() string
 	OnFocus(*App, *gocui.View)
 	OnEnter(*App, *gocui.View)
-	View
+	ViewContext
 }
 
 func NewMenuView() *MenuView {
