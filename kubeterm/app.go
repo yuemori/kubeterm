@@ -20,8 +20,9 @@ type App struct {
 	client *Client
 	menu   *MenuView
 
-	MaxHeight int
-	MaxWidth  int
+	MaxHeight        int
+	MaxWidth         int
+	currentNamespace string
 
 	views []View
 }
@@ -49,6 +50,7 @@ func (a *App) MainLoop() {
 
 	var items []MenuItem
 
+	a.SetCurrentNamespace("default")
 	a.setKeybinding("", KeyCtrlC, ModNone, a.Quit)
 	nv := a.openNamespaceView()
 	items = append(items, nv)
@@ -64,6 +66,14 @@ func (a *App) MainLoop() {
 func (a *App) ReturnToMenu() {
 	a.SetCurrentView(a.menu)
 	a.menu.Draw(a.GetGoCuiView(a.menu), true)
+}
+
+func (a *App) CurrentNamespace() string {
+	return a.currentNamespace
+}
+
+func (a *App) SetCurrentNamespace(ns string) {
+	a.currentNamespace = ns
 }
 
 func (a *App) openMenuView(items []MenuItem) *MenuView {
@@ -85,7 +95,7 @@ func (a *App) openNamespaceView() *NamespaceView {
 }
 
 func (a *App) openPodView() *PodView {
-	v := NewPodView("kube-system")
+	v := NewPodView(a.CurrentNamespace())
 	a.OpenView(v, 20, 0, a.MaxWidth, a.MaxHeight)
 	return v
 }

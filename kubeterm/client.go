@@ -70,6 +70,8 @@ func (c *Client) WatchNamespace(handler func(nss *v1.NamespaceList)) watch.Inter
 func (c *Client) WatchPod(ns string, handler func(nss *v1.PodList)) watch.Interface {
 	watcher, err := c.client.Pods(ns).Watch(v1.ListOptions{Watch: true})
 
+	c.PodList = &v1.PodList{}
+
 	if err != nil {
 		log.Panicln(err)
 	}

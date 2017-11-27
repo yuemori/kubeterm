@@ -26,6 +26,7 @@ func (v *NamespaceView) Open(a *App, gv *gocui.View) {
 	a.SetViewKeybinding(v, 'q', ModNone, v.quit)
 	a.SetViewKeybinding(v, 'j', ModNone, v.ptrDown)
 	a.SetViewKeybinding(v, 'k', ModNone, v.ptrUp)
+	a.SetViewKeybinding(v, KeyEnter, ModNone, v.enter)
 
 	watcher := a.client.WatchNamespace(func(nss *v1.NamespaceList) {
 		a.Update(func() error { return v.update(gv, nss) })
@@ -44,6 +45,14 @@ func (v *NamespaceView) update(gv *gocui.View, nss *v1.NamespaceList) error {
 
 	v.items = nss.Items
 
+	return nil
+}
+
+func (v *NamespaceView) enter(a *App, gv *gocui.View) error {
+	_, y := gv.Cursor()
+
+	ns := v.items[y-1]
+	a.SetCurrentNamespace(ns.ObjectMeta.Name)
 	return nil
 }
 
@@ -73,11 +82,15 @@ func (v *NamespaceView) quit(a *App, gv *gocui.View) error {
 	return nil
 }
 
+func (v *NamespaceView) OnEnter(a *App, gv *gocui.View) {
+	gv.Highlight = true
+	v.OnFocus(a, gv)
+}
+
 func (v *NamespaceView) OnFocus(a *App, gv *gocui.View) {
 	v.ptrInit(gv)
 
 	a.Update(func() error {
-		gv.Highlight = true
 		return v.update(gv, &v1.NamespaceList{
 			Items: v.items,
 		})

@@ -29,11 +29,7 @@ func (v *PodView) Open(a *App, gv *gocui.View) {
 	a.SetViewKeybinding(v, 'j', ModNone, v.ptrDown)
 	a.SetViewKeybinding(v, 'k', ModNone, v.ptrUp)
 
-	watcher := a.client.WatchPod(v.namespace, func(pods *v1.PodList) {
-		a.Update(func() error { return v.update(gv, pods) })
-	})
-
-	v.watcher = watcher
+	v.init(a.CurrentNamespace(), a, gv)
 }
 
 func (v *PodView) quit(a *App, gv *gocui.View) error {
@@ -78,11 +74,40 @@ func (v *PodView) Close() {
 	v.watcher.Stop()
 }
 
+func (v *PodView) init(ns string, a *App, gv *gocui.View) {
+	v.namespace = ns
+
+	if v.watcher != nil {
+		v.watcher.Stop()
+	}
+
+	v.items = []v1.Pod{}
+
+	v.update(gv, &v1.PodList{Items: v.items})
+
+	watcher := a.client.WatchPod(ns, func(pods *v1.PodList) {
+		a.Update(func() error {
+			return v.update(gv, pods)
+		})
+	})
+
+	v.watcher = watcher
+}
+
+func (v *PodView) OnEnter(a *App, gv *gocui.View) {
+	gv.Highlight = true
+	v.OnFocus(a, gv)
+}
+
 func (v *PodView) OnFocus(a *App, gv *gocui.View) {
 	v.ptrInit(gv)
 
+	if ns := a.CurrentNamespace(); ns != v.namespace {
+		v.init(ns, a, gv)
+		return
+	}
+
 	a.Update(func() error {
-		gv.Highlight = true
 		return v.update(gv, &v1.PodList{
 			Items: v.items,
 		})

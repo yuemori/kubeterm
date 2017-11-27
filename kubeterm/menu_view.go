@@ -13,6 +13,7 @@ type MenuView struct {
 type MenuItem interface {
 	DisplayName() string
 	OnFocus(*App, *gocui.View)
+	OnEnter(*App, *gocui.View)
 	View
 }
 
@@ -43,13 +44,20 @@ func (v *MenuView) enter(a *App, gv *gocui.View) error {
 		return nil
 	})
 
-	_, y := gv.Cursor()
-	item := v.items[y]
-	item.OnFocus(a, a.GetGoCuiView(item))
-	a.SetViewOnTop(item)
+	item := v.selectItem(a, gv)
+	item.OnEnter(a, a.GetGoCuiView(item))
 	a.SetCurrentView(item)
 
 	return nil
+}
+
+func (v *MenuView) selectItem(a *App, gv *gocui.View) MenuItem {
+	_, y := gv.Cursor()
+	item := v.items[y]
+	a.SetViewOnTop(item)
+	item.OnFocus(a, a.GetGoCuiView(item))
+
+	return item
 }
 
 func (v *MenuView) AddMenu(item MenuItem) {
@@ -84,6 +92,8 @@ func (v *MenuView) ptrDown(a *App, gv *gocui.View) error {
 		return err
 	}
 
+	v.selectItem(a, gv)
+
 	return nil
 }
 
@@ -98,6 +108,8 @@ func (v *MenuView) ptrUp(a *App, gv *gocui.View) error {
 	if err := gv.SetCursor(x, next); err != nil {
 		return err
 	}
+
+	v.selectItem(a, gv)
 
 	return nil
 }
