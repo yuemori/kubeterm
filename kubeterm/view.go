@@ -1,75 +1,114 @@
 package kubeterm
 
 import (
+	"fmt"
 	"github.com/jroimartin/gocui"
 	"log"
 )
 
+type View struct {
+	gui  *gocui.Gui
+	ctx  ViewContext
+	view *gocui.View
+}
+
 type ViewContext interface {
 	Name() string
-	Open(a *App, v *gocui.View)
-	Close()
+	DisplayName() string
+	BeginPointerIndex() int
+	Init(view *View)
+	Position() (int, int, int, int)
+	Lines() []string
+	Height() int
 }
 
-func (a *App) AppendView(v ViewContext) {
-	a.views = append(a.views, v)
+func NewView(gui *gocui.Gui, ctx ViewContext, view *gocui.View) *View {
+	return &View{gui, ctx, view}
 }
 
-func (a *App) OpenView(v ViewContext, x0, y0, x1, y1 int) {
-	view, err := a.g.SetView(v.Name(), x0, y0, x1, y1)
-
-	view.Frame = false
-
-	if err != nil &&
-		err != gocui.ErrUnknownView {
-		log.Panicln(err)
-	}
-
-	v.Open(a, view)
-	a.AppendView(v)
-}
-
-func (a *App) SetCurrentView(v ViewContext) {
-	_, err := a.g.SetCurrentView(v.Name())
-
-	if err != nil && err != gocui.ErrUnknownView {
-		log.Panicln(err)
-	}
-}
-
-func (a *App) SetViewKeybinding(v ViewContext, key interface{}, mod gocui.Modifier, handler func(*App, *gocui.View) error) {
-	a.setKeybinding(v.Name(), key, mod, handler)
-}
-
-func (a *App) setKeybinding(viewname string, key interface{}, mod gocui.Modifier, handler func(*App, *gocui.View) error) {
+func (v *View) SetKeybinding(key interface{}, handler func() error) {
 	f := func(g *gocui.Gui, v *gocui.View) error {
-		return handler(a, v)
+		return handler()
 	}
 
-	if err := a.g.SetKeybinding(viewname, key, mod, f); err != nil {
+	if err := v.gui.SetKeybinding(v.ctx.Name(), key, gocui.ModNone, f); err != nil {
 		log.Panicln(err)
 	}
 }
 
-func (a *App) SetViewOnTop(v ViewContext) {
-	_, err := a.g.SetViewOnTop(v.Name())
+func (v *View) Init() {
+	v.view.SelBgColor = gocui.ColorRed
+	v.view.SelFgColor = gocui.ColorGreen
+	v.ctx.Init(v)
+}
 
-	if err != nil && err != gocui.ErrUnknownView {
+func (v *View) PointerUp() error {
+	x, y := v.view.Cursor()
+	next := y - 1
+
+	if next < 0 {
+		next = 0
+	}
+
+	if err := v.view.SetCursor(x, next); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (v *View) PointerDown() error {
+	x, y := v.view.Cursor()
+	next := y + 1
+
+	if next > v.ctx.Height()-1 {
+		next = y
+	}
+
+	if err := v.view.SetCursor(x, next); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (v *View) PointerPos() int {
+	_, y := v.view.Cursor()
+
+	return y
+}
+
+func (v *View) pointerReset() {
+	if err := v.view.SetCursor(0, v.ctx.BeginPointerIndex()); err != nil {
 		log.Panicln(err)
 	}
 }
 
-func (a *App) Update(handler func() error) {
-	f := func(*gocui.Gui) error { return handler() }
-	a.g.Update(f)
+func (v *View) OnFocusIn() {
+	v.pointerReset()
+	v.view.Highlight = true
+	v.Update()
 }
 
-func (a *App) GetGoCuiView(v ViewContext) *gocui.View {
-	gv, err := a.g.View(v.Name())
+func (v *View) OnFocusOut() {
+	v.view.Highlight = false
+	v.Update()
+}
 
-	if err != nil && err != gocui.ErrUnknownView {
-		log.Panicln(err)
-	}
+func (v *View) Quit() error {
+	return nil
+}
 
-	return gv
+func (v *View) Cursor() (x, y int) {
+	return v.view.Cursor()
+}
+
+func (v *View) Update() {
+	v.gui.Update(func(*gocui.Gui) error {
+		v.view.Clear()
+		for _, line := range v.ctx.Lines() {
+			fmt.Fprintln(v.view, line)
+		}
+		return nil
+	})
 }

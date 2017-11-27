@@ -10,7 +10,7 @@ import (
 )
 
 type Client struct {
-	client v1core.CoreV1Interface
+	Interface v1core.CoreV1Interface
 
 	NamespaceList *v1.NamespaceList
 	PodList       *v1.PodList
@@ -24,7 +24,7 @@ func NewClient(config *Config) *Client {
 	}
 
 	c := &Client{
-		client:        clientset.CoreV1(),
+		Interface:     clientset.CoreV1(),
 		NamespaceList: &v1.NamespaceList{},
 		PodList:       &v1.PodList{},
 	}
@@ -33,7 +33,7 @@ func NewClient(config *Config) *Client {
 }
 
 func (c *Client) WatchNamespace(handler func(nss *v1.NamespaceList)) watch.Interface {
-	watcher, err := c.client.Namespaces().Watch(v1.ListOptions{Watch: true})
+	watcher, err := c.Interface.Namespaces().Watch(v1.ListOptions{Watch: true})
 
 	if err != nil {
 		log.Panicln(err)
@@ -68,7 +68,7 @@ func (c *Client) WatchNamespace(handler func(nss *v1.NamespaceList)) watch.Inter
 }
 
 func (c *Client) WatchPod(ns string, handler func(nss *v1.PodList)) watch.Interface {
-	watcher, err := c.client.Pods(ns).Watch(v1.ListOptions{Watch: true})
+	watcher, err := c.Interface.Pods(ns).Watch(v1.ListOptions{Watch: true})
 
 	c.PodList = &v1.PodList{}
 
