@@ -37,13 +37,13 @@ func (a *App) SetCurrentView(v View) {
 	}
 }
 
-func (a *App) SetViewKeybinding(v View, key interface{}, mod gocui.Modifier, handler func() error) {
+func (a *App) SetViewKeybinding(v View, key interface{}, mod gocui.Modifier, handler func(*App, *gocui.View) error) {
 	a.setKeybinding(v.Name(), key, mod, handler)
 }
 
-func (a *App) setKeybinding(viewname string, key interface{}, mod gocui.Modifier, handler func() error) {
-	f := func(*gocui.Gui, *gocui.View) error {
-		return handler()
+func (a *App) setKeybinding(viewname string, key interface{}, mod gocui.Modifier, handler func(*App, *gocui.View) error) {
+	f := func(g *gocui.Gui, v *gocui.View) error {
+		return handler(a, v)
 	}
 
 	if err := a.g.SetKeybinding(viewname, key, mod, f); err != nil {
@@ -57,4 +57,19 @@ func (a *App) SetViewOnTop(v View) {
 	if err != nil && err != gocui.ErrUnknownView {
 		log.Panicln(err)
 	}
+}
+
+func (a *App) Update(handler func() error) {
+	f := func(*gocui.Gui) error { return handler() }
+	a.g.Update(f)
+}
+
+func (a *App) GetGoCuiView(v View) *gocui.View {
+	gv, err := a.g.View(v.Name())
+
+	if err != nil && err != gocui.ErrUnknownView {
+		log.Panicln(err)
+	}
+
+	return gv
 }

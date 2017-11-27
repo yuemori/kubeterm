@@ -3,19 +3,16 @@ package kubeterm
 import (
 	"fmt"
 	"github.com/jroimartin/gocui"
-	"time"
 )
 
 type MenuView struct {
-	gv    *gocui.View
 	done  chan struct{}
-	dirty bool
 	items []MenuItem
 }
 
 type MenuItem interface {
 	DisplayName() string
-	OnEnter()
+	OnFocus(*App, *gocui.View)
 	View
 }
 
@@ -23,49 +20,36 @@ func NewMenuView() *MenuView {
 	m := &MenuView{
 		done:  make(chan struct{}),
 		items: []MenuItem{},
-		dirty: false,
 	}
 
 	return m
 }
 
 func (v *MenuView) Open(a *App, gv *gocui.View) {
-	v.gv = gv
 	a.SetViewKeybinding(v, 'q', ModNone, a.Quit)
 	a.SetViewKeybinding(v, 'j', ModNone, v.ptrDown)
 	a.SetViewKeybinding(v, 'k', ModNone, v.ptrUp)
-	a.SetViewKeybinding(v, KeyEnter, ModNone, func() error {
-		_, y := v.gv.Cursor()
-		item := v.items[y]
-		item.OnEnter()
-		a.SetViewOnTop(item)
+	a.SetViewKeybinding(v, KeyEnter, ModNone, v.enter)
 
-		return nil
-	})
-
-	gv.Highlight = true
 	gv.SelBgColor = gocui.ColorRed
 	gv.SelFgColor = gocui.ColorGreen
 
-	tick := time.Tick(50 * time.Millisecond)
+	v.Draw(gv, true)
+}
 
-	v.draw()
+func (v *MenuView) enter(a *App, gv *gocui.View) error {
+	a.Update(func() error {
+		v.Draw(gv, false)
+		return nil
+	})
 
-	go func() {
-		for {
-			select {
-			case <-v.done:
-				return
-			case <-tick:
-				if v.dirty == true {
-					v.dirty = false
-					gv.Clear()
-					v.draw()
-				}
-			default:
-			}
-		}
-	}()
+	_, y := gv.Cursor()
+	item := v.items[y]
+	item.OnFocus(a, a.GetGoCuiView(item))
+	a.SetViewOnTop(item)
+	a.SetCurrentView(item)
+
+	return nil
 }
 
 func (v *MenuView) AddMenu(item MenuItem) {
@@ -76,9 +60,11 @@ func (v *MenuView) Close() {
 	close(v.done)
 }
 
-func (v *MenuView) draw() {
+func (v *MenuView) Draw(gv *gocui.View, hl bool) {
+	gv.Highlight = hl
+	gv.Clear()
 	for _, item := range v.items {
-		fmt.Fprintln(v.gv, item.DisplayName())
+		fmt.Fprintln(gv, item.DisplayName())
 	}
 }
 
@@ -86,36 +72,32 @@ func (v *MenuView) Name() string {
 	return "menu"
 }
 
-func (v *MenuView) ptrDown() error {
-	x, y := v.gv.Cursor()
+func (v *MenuView) ptrDown(a *App, gv *gocui.View) error {
+	x, y := gv.Cursor()
 	next := y + 1
 
 	if next > len(v.items)-1 {
 		next = y
 	}
 
-	if err := v.gv.SetCursor(x, next); err != nil {
+	if err := gv.SetCursor(x, next); err != nil {
 		return err
 	}
-
-	v.dirty = true
 
 	return nil
 }
 
-func (v *MenuView) ptrUp() error {
-	x, y := v.gv.Cursor()
+func (v *MenuView) ptrUp(a *App, gv *gocui.View) error {
+	x, y := gv.Cursor()
 	next := y - 1
 
 	if next < 0 {
 		next = 0
 	}
 
-	if err := v.gv.SetCursor(x, next); err != nil {
+	if err := gv.SetCursor(x, next); err != nil {
 		return err
 	}
-
-	v.dirty = true
 
 	return nil
 }

@@ -18,6 +18,7 @@ const (
 type App struct {
 	g      *gocui.Gui
 	client *Client
+	menu   *MenuView
 
 	MaxHeight int
 	MaxWidth  int
@@ -53,14 +54,19 @@ func (a *App) MainLoop() {
 	items = append(items, nv)
 	items = append(items, a.openPodView())
 	a.SetViewOnTop(nv)
-	a.openMenuView(items)
+	a.menu = a.openMenuView(items)
 
 	if err := a.g.MainLoop(); err != nil && err != gocui.ErrQuit {
 		log.Panicln(err)
 	}
 }
 
-func (a *App) openMenuView(items []MenuItem) {
+func (a *App) ReturnToMenu() {
+	a.SetCurrentView(a.menu)
+	a.menu.Draw(a.GetGoCuiView(a.menu), true)
+}
+
+func (a *App) openMenuView(items []MenuItem) *MenuView {
 	v := NewMenuView()
 	for _, item := range items {
 		v.AddMenu(item)
@@ -68,6 +74,8 @@ func (a *App) openMenuView(items []MenuItem) {
 
 	a.OpenView(v, 0, 0, 20, a.MaxHeight)
 	a.SetCurrentView(v)
+
+	return v
 }
 
 func (a *App) openNamespaceView() *NamespaceView {
@@ -82,7 +90,7 @@ func (a *App) openPodView() *PodView {
 	return v
 }
 
-func (a *App) Quit() error {
+func (a *App) Quit(*App, *gocui.View) error {
 	for _, v := range a.views {
 		v.Close()
 	}
