@@ -6,25 +6,21 @@ import (
 	"time"
 )
 
-var (
-	MenuLines = []string{
-		"Namespaces",
-		"Pods",
-		"Services",
-		"Deployments",
-		"StatefulSets",
-	}
-)
-
 type MenuView struct {
 	gv    *gocui.View
 	done  chan struct{}
 	dirty bool
+	items []MenuItem
+}
+
+type MenuItem interface {
+	DisplayName() string
 }
 
 func NewMenuView() *MenuView {
 	m := &MenuView{
 		done:  make(chan struct{}),
+		items: []MenuItem{},
 		dirty: false,
 	}
 
@@ -66,13 +62,17 @@ func (v *MenuView) enter() error {
 	return nil
 }
 
+func (v *MenuView) AddMenu(item MenuItem) {
+	v.items = append(v.items, item)
+}
+
 func (v *MenuView) Close() {
 	close(v.done)
 }
 
 func (v *MenuView) draw() {
-	for _, str := range MenuLines {
-		fmt.Fprintln(v.gv, str)
+	for _, item := range v.items {
+		fmt.Fprintln(v.gv, item.DisplayName())
 	}
 }
 
@@ -84,7 +84,7 @@ func (v *MenuView) ptrDown() error {
 	x, y := v.gv.Cursor()
 	next := y + 1
 
-	if next > len(MenuLines)-1 {
+	if next > len(v.items)-1 {
 		next = y
 	}
 

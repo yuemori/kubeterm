@@ -50,3 +50,7 @@ func (v *NamespaceView) Close() {
 func (v *NamespaceView) Name() string {
 	return "namespace"
 }
+
+func (v *NamespaceView) DisplayName() string {
+	return "Namespace"
+}

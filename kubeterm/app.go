@@ -46,24 +46,31 @@ func NewApp(client *Client) *App {
 func (a *App) MainLoop() {
 	defer a.g.Close()
 
+	var items []MenuItem
+
 	a.setKeybinding("", KeyCtrlC, ModNone, a.Quit)
-	a.openMenuView()
-	a.openNamespaceView()
+	items = append(items, a.openNamespaceView())
+	a.openMenuView(items)
 
 	if err := a.g.MainLoop(); err != nil && err != gocui.ErrQuit {
 		log.Panicln(err)
 	}
 }
 
-func (a *App) openMenuView() {
+func (a *App) openMenuView(items []MenuItem) {
 	v := NewMenuView()
+	for _, item := range items {
+		v.AddMenu(item)
+	}
+
 	a.OpenView(v, 0, 0, 20, a.MaxHeight)
 	a.SetCurrentView(v)
 }
 
-func (a *App) openNamespaceView() {
+func (a *App) openNamespaceView() MenuItem {
 	v := NewNamespaceView()
 	a.OpenView(v, 20, 0, a.MaxWidth, a.MaxHeight)
+	return v
 }
 
 func (a *App) Quit() error {
