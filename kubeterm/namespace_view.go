@@ -8,14 +8,11 @@ import (
 )
 
 type NamespaceView struct {
-	done    chan struct{}
 	watcher watch.Interface
 }
 
 func NewNamespaceView() *NamespaceView {
-	return &NamespaceView{
-		done: make(chan struct{}),
-	}
+	return &NamespaceView{}
 }
 
 func (v *NamespaceView) Open(a *App, gv *gocui.View) {
@@ -44,7 +41,6 @@ func (v *NamespaceView) printLine(gv *gocui.View, a ...interface{}) {
 
 func (v *NamespaceView) Close() {
 	v.watcher.Stop()
-	close(v.done)
 }
 
 func (v *NamespaceView) Name() string {
