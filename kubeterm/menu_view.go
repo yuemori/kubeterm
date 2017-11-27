@@ -53,7 +53,7 @@ func (v *MenuView) Open(a *App, gv *gocui.View) {
 			case <-tick:
 				if v.dirty == true {
 					v.dirty = false
-					v.clear()
+					gv.Clear()
 					v.draw()
 				}
 			default:
@@ -68,10 +68,6 @@ func (v *MenuView) enter() error {
 
 func (v *MenuView) Close() {
 	close(v.done)
-}
-
-func (v *MenuView) clear() {
-	v.gv.Clear()
 }
 
 func (v *MenuView) draw() {

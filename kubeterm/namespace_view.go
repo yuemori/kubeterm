@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"github.com/jroimartin/gocui"
 	v1 "k8s.io/client-go/pkg/api/v1"
+	"k8s.io/client-go/pkg/watch"
 )
 
 type NamespaceView struct {
-	done chan struct{}
+	done    chan struct{}
+	watcher watch.Interface
 }
 
 func NewNamespaceView() *NamespaceView {
@@ -20,19 +22,20 @@ func (v *NamespaceView) Open(a *App, gv *gocui.View) {
 	gv.SelBgColor = gocui.ColorRed
 	gv.SelFgColor = gocui.ColorGreen
 
-	a.client.WatchNamespace(func(nss *v1.NamespaceList) {
-		v.draw(a, gv, nss)
+	watcher := a.client.WatchNamespace(func(nss *v1.NamespaceList) {
+		a.g.Update(func(g *gocui.Gui) error {
+			gv.Clear()
+			v.printLine(gv, "Name", "Status", "CreationTimestamp")
+
+			for _, ns := range nss.Items {
+				v.printLine(gv, ns.ObjectMeta.Name, ns.Status.Phase, ns.ObjectMeta.CreationTimestamp.Time)
+			}
+
+			return nil
+		})
 	})
-}
 
-func (v *NamespaceView) draw(a *App, gv *gocui.View, nss *v1.NamespaceList) {
-	gv.Clear()
-
-	v.printLine(gv, "Name", "Status", "CreationTimestamp")
-
-	for _, ns := range nss.Items {
-		v.printLine(gv, ns.ObjectMeta.Name, ns.Status.Phase, ns.ObjectMeta.CreationTimestamp.Time)
-	}
+	v.watcher = watcher
 }
 
 func (v *NamespaceView) printLine(gv *gocui.View, a ...interface{}) {
@@ -40,9 +43,10 @@ func (v *NamespaceView) printLine(gv *gocui.View, a ...interface{}) {
 }
 
 func (v *NamespaceView) Close() {
+	v.watcher.Stop()
 	close(v.done)
 }
 
 func (v *NamespaceView) Name() string {
-	return "detail"
+	return "namespace"
 }

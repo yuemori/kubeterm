@@ -41,6 +41,10 @@ func (c *Client) WatchNamespace(handler func(nss *v1.NamespaceList)) watch.Inter
 		for {
 			select {
 			case e := <-watcher.ResultChan():
+				if e.Object == nil {
+					continue
+				}
+
 				ns := e.Object.(*v1.Namespace)
 				switch e.Type {
 				case watch.Added:

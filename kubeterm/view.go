@@ -38,7 +38,6 @@ func (a *App) SetCurrentView(v View) {
 }
 
 func (a *App) SetViewKeybinding(v View, key interface{}, mod gocui.Modifier, handler func() error) {
-
 	a.setKeybinding(v.Name(), key, mod, handler)
 }
 
