@@ -17,14 +17,13 @@ const (
 
 type App struct {
 	g      *gocui.Gui
-	client *Client
+	Client *Client
 	menu   *MenuView
 
-	MaxHeight        int
-	MaxWidth         int
+	Window           *Window
 	currentNamespace string
 
-	views []View
+	views []ViewContext
 }
 
 func NewApp(client *Client) *App {
@@ -33,77 +32,44 @@ func NewApp(client *Client) *App {
 		log.Panicln(err)
 	}
 
-	w, h := g.Size()
 	app := &App{
-		client:    client,
-		MaxHeight: h,
-		MaxWidth:  w,
-		g:         g,
-		views:     []View{},
+		Client: client,
+		Window: GetWindow(),
+		g:      g,
+		views:  []ViewContext{},
 	}
 
 	return app
 }
 
-func (a *App) MainLoop() {
-	defer a.g.Close()
+func (app *App) MainLoop() {
+	ns := app.Window.AddView(NewNamespaceView(app.Client))
+	pod := app.Window.AddView(NewPodView("default", app.Client))
+	menu := NewMenuView()
+	menu.AddMenu(ns)
+	menu.AddMenu(pod)
 
-	var items []MenuItem
+	app.Window.SetViewOnTop(ns)
+	app.Window.SetCurrentView(app.Window.AddView(menu))
 
-	a.SetCurrentNamespace("default")
-	a.setKeybinding("", KeyCtrlC, ModNone, a.Quit)
-	nv := a.openNamespaceView()
-	items = append(items, nv)
-	items = append(items, a.openPodView())
-	a.SetViewOnTop(nv)
-	a.menu = a.openMenuView(items)
+	app.Window.Loop()
+}
 
-	if err := a.g.MainLoop(); err != nil && err != gocui.ErrQuit {
+func (app *App) Quit() error {
+	return app.Window.Quit()
+}
+
+func (a *App) Update(handler func() error) {
+	f := func(*gocui.Gui) error { return handler() }
+	a.g.Update(f)
+}
+
+func (a *App) GetGoCuiView(v ViewContext) *gocui.View {
+	gv, err := a.g.View(v.Name())
+
+	if err != nil && err != gocui.ErrUnknownView {
 		log.Panicln(err)
 	}
-}
 
-func (a *App) ReturnToMenu() {
-	a.SetCurrentView(a.menu)
-	a.menu.Draw(a.GetGoCuiView(a.menu), true)
-}
-
-func (a *App) CurrentNamespace() string {
-	return a.currentNamespace
-}
-
-func (a *App) SetCurrentNamespace(ns string) {
-	a.currentNamespace = ns
-}
-
-func (a *App) openMenuView(items []MenuItem) *MenuView {
-	v := NewMenuView()
-	for _, item := range items {
-		v.AddMenu(item)
-	}
-
-	a.OpenView(v, 0, 0, 20, a.MaxHeight)
-	a.SetCurrentView(v)
-
-	return v
-}
-
-func (a *App) openNamespaceView() *NamespaceView {
-	v := NewNamespaceView()
-	a.OpenView(v, 20, 0, a.MaxWidth, a.MaxHeight)
-	return v
-}
-
-func (a *App) openPodView() *PodView {
-	v := NewPodView(a.CurrentNamespace())
-	a.OpenView(v, 20, 0, a.MaxWidth, a.MaxHeight)
-	return v
-}
-
-func (a *App) Quit(*App, *gocui.View) error {
-	for _, v := range a.views {
-		v.Close()
-	}
-
-	return gocui.ErrQuit
+	return gv
 }
