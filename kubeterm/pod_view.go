@@ -45,7 +45,6 @@ func (v *PodView) Init(view *View) {
 	view.SetKeybinding('q', view.Quit)
 	view.SetKeybinding('k', view.PointerUp)
 	view.SetKeybinding('j', view.PointerDown)
-
 }
 
 func (v *PodView) BeginPointerIndex() (x int) {
@@ -58,9 +57,5 @@ func (v *PodView) Position() (x0, y0, x1, y1 int) {
 }
 
 func (v *PodView) Name() string {
-	return "pod"
-}
-
-func (v *PodView) DisplayName() string {
 	return "Pods"
 }

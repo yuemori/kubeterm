@@ -51,9 +51,5 @@ func (v *NamespaceView) Position() (x0, y0, x1, y1 int) {
 }
 
 func (v *NamespaceView) Name() string {
-	return "namespace"
-}
-
-func (v *NamespaceView) DisplayName() string {
 	return "Namespaces"
 }

@@ -12,10 +12,6 @@ func NewMenuView() *MenuView {
 	return m
 }
 
-func (v *MenuView) DisplayName() string {
-	return "Menu"
-}
-
 func (v *MenuView) Init(view *View) {
 	view.SetKeybinding('q', func() error {
 		return GetWindow().Quit()
@@ -65,7 +61,7 @@ func (v *MenuView) Height() int {
 func (v *MenuView) Lines() []string {
 	lines := []string{}
 	for _, item := range v.items {
-		lines = append(lines, item.DisplayName())
+		lines = append(lines, item.Name())
 	}
 	return lines
 }
@@ -75,5 +71,5 @@ func (v *MenuView) AddMenu(item *View) {
 }
 
 func (v *MenuView) Name() string {
-	return "menu"
+	return "Menu"
 }

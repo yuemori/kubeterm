@@ -14,7 +14,6 @@ type View struct {
 
 type ViewContext interface {
 	Name() string
-	DisplayName() string
 	BeginPointerIndex() int
 	Init(view *View)
 	Position() (int, int, int, int)
@@ -28,10 +27,6 @@ func NewView(gui *gocui.Gui, ctx ViewContext, view *gocui.View) *View {
 
 func (v *View) Name() string {
 	return v.ctx.Name()
-}
-
-func (v *View) DisplayName() string {
-	return v.ctx.DisplayName()
 }
 
 func (v *View) SetKeybinding(key interface{}, handler func() error) {
@@ -104,7 +99,7 @@ func (v *View) OnFocusOut() {
 }
 
 func (v *View) Quit() error {
-	return nil
+	return GetWindow().Back()
 }
 
 func (v *View) Cursor() (x, y int) {
