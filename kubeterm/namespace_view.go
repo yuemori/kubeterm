@@ -36,9 +36,13 @@ func (v *NamespaceView) Init(view *View) {
 	view.SetKeybinding('q', view.Quit)
 	view.SetKeybinding('k', view.PointerUp)
 	view.SetKeybinding('j', view.PointerDown)
-	// view.SetKeybinding(KeyEnter, func() error {
-	// 	return nil
-	// })
+
+	view.SetKeybinding(KeyEnter, func() error {
+		ptr := view.PointerPos()
+		item := v.items[ptr-1]
+		GetApp().SetCurrentNamespace(item.ObjectMeta.Name)
+		return nil
+	})
 }
 
 func (v *NamespaceView) BeginPointerIndex() (x int) {
@@ -52,4 +56,19 @@ func (v *NamespaceView) Position() (x0, y0, x1, y1 int) {
 
 func (v *NamespaceView) Name() string {
 	return "Namespaces"
+}
+
+func (v *NamespaceView) OnNamespaceUpdate(string) {
+}
+
+func (v *NamespaceView) OnVisible() {
+}
+
+func (v *NamespaceView) OnInvisible() {
+}
+
+func (v *NamespaceView) OnFocusIn() {
+}
+
+func (v *NamespaceView) OnFocusOut() {
 }

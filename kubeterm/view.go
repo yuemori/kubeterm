@@ -21,6 +21,11 @@ type ViewContext interface {
 	Position() (int, int, int, int)
 	Lines() []string
 	Height() int
+	OnNamespaceUpdate(string)
+	OnVisible()
+	OnInvisible()
+	OnFocusOut()
+	OnFocusIn()
 }
 
 func NewView(gui *gocui.Gui, ctx ViewContext, view *gocui.View) *View {
@@ -93,7 +98,22 @@ func (v *View) pointerReset() {
 	}
 }
 
+func (v *View) OnVisible() {
+	v.ctx.OnVisible()
+	v.Update()
+}
+
+func (v *View) OnNamespaceUpdate(namespace string) {
+	v.ctx.OnNamespaceUpdate(namespace)
+}
+
+func (v *View) OnInvisible() {
+	v.ctx.OnInvisible()
+	v.Update()
+}
+
 func (v *View) OnFocusIn() {
+	v.ctx.OnFocusIn()
 	if !v.keepPointer {
 		v.pointerReset()
 	}
@@ -102,6 +122,7 @@ func (v *View) OnFocusIn() {
 }
 
 func (v *View) OnFocusOut() {
+	v.ctx.OnFocusOut()
 	v.view.Highlight = false
 	v.Update()
 }

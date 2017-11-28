@@ -2,7 +2,6 @@ package kubeterm
 
 import (
 	"github.com/jroimartin/gocui"
-	"log"
 )
 
 const (
@@ -15,61 +14,40 @@ const (
 	ModAlt  = gocui.ModAlt
 )
 
+const (
+	DEFAULT_NAMESPACE = "default"
+)
+
+var app *App = NewApp()
+
 type App struct {
-	g      *gocui.Gui
-	Client *Client
-	menu   *MenuView
-
-	Window           *Window
-	currentNamespace string
-
-	views []ViewContext
+	CurrentNamespace string
 }
 
-func NewApp(client *Client) *App {
-	g, err := gocui.NewGui(gocui.OutputNormal)
-	if err != nil {
-		log.Panicln(err)
-	}
+func GetApp() *App {
+	return app
+}
 
-	app := &App{
-		Client: client,
-		Window: GetWindow(),
-		g:      g,
-		views:  []ViewContext{},
-	}
+func NewApp() *App {
+	app := &App{DEFAULT_NAMESPACE}
 
 	return app
 }
 
-func (app *App) MainLoop() {
-	ns := app.Window.AddView(NewNamespaceView(app.Client))
-	pod := app.Window.AddView(NewPodView("default", app.Client))
+func (app *App) MainLoop(client *Client) {
+	w := GetWindow()
+	ns := w.AddView(NewNamespaceView(client))
+	pod := w.AddView(NewPodView(client))
 	menu := NewMenuView()
 	menu.AddMenu(ns)
 	menu.AddMenu(pod)
 
-	app.Window.SetViewOnTop(ns)
-	app.Window.SetCurrentView(app.Window.AddView(menu))
+	w.SetViewOnTop(ns)
+	w.SetCurrentView(w.AddView(menu))
 
-	app.Window.Loop()
+	w.Loop()
 }
-
-func (app *App) Quit() error {
-	return app.Window.Quit()
-}
-
-func (a *App) Update(handler func() error) {
-	f := func(*gocui.Gui) error { return handler() }
-	a.g.Update(f)
-}
-
-func (a *App) GetGoCuiView(v ViewContext) *gocui.View {
-	gv, err := a.g.View(v.Name())
-
-	if err != nil && err != gocui.ErrUnknownView {
-		log.Panicln(err)
-	}
-
-	return gv
+func (app *App) SetCurrentNamespace(namespace string) {
+	app.CurrentNamespace = namespace
+	GetWindow().OnNamespaceUpdate(namespace)
 }

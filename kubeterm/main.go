@@ -12,8 +12,7 @@ func stdErr(err error) {
 
 func Run(ctx context.Context, config *Config) error {
 	client := NewClient(config)
-	app := NewApp(client)
-	app.MainLoop()
+	GetApp().MainLoop(client)
 
 	return nil
 }

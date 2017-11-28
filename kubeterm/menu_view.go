@@ -76,3 +76,18 @@ func (v *MenuView) AddMenu(item *View) {
 func (v *MenuView) Name() string {
 	return "Menu"
 }
+
+func (v *MenuView) OnNamespaceUpdate(string) {
+}
+
+func (v *MenuView) OnVisible() {
+}
+
+func (v *MenuView) OnInvisible() {
+}
+
+func (v *MenuView) OnFocusIn() {
+}
+
+func (v *MenuView) OnFocusOut() {
+}

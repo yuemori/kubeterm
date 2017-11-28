@@ -16,10 +16,21 @@ type PodView struct {
 	items     []v1.Pod
 }
 
-func NewPodView(ns string, client *Client) *PodView {
+func NewPodView(client *Client) *PodView {
+	ns := GetApp().CurrentNamespace
 	table := NewTableView("%-60s\t%-10s\t%-10s\t%-20s")
 	table.AddHeader("Name", "Ready", "Status", "CreationTimestamp")
-	pods, err := client.Interface.Pods(ns).List(v1.ListOptions{})
+
+	return &PodView{
+		TableView: table,
+		namespace: ns,
+		client:    client,
+		items:     []v1.Pod{},
+	}
+}
+
+func (v *PodView) load() {
+	pods, err := v.client.Interface.Pods(v.namespace).List(v1.ListOptions{})
 
 	if err != nil {
 		log.Panicln(err)
@@ -30,21 +41,42 @@ func NewPodView(ns string, client *Client) *PodView {
 		now := len(funk.Filter(pod.Status.ContainerStatuses, func(s v1.ContainerStatus) bool { return s.Ready }).([]v1.ContainerStatus))
 		ready := fmt.Sprintf("%d/%d", now, max)
 
-		table.AddRow(pod.ObjectMeta.Name, ready, pod.Status.Phase, pod.ObjectMeta.CreationTimestamp.Time)
+		v.AddRow(pod.ObjectMeta.Name, ready, pod.Status.Phase, pod.ObjectMeta.CreationTimestamp.Time)
 	}
 
-	return &PodView{
-		TableView: table,
-		namespace: ns,
-		client:    client,
-		items:     pods.Items,
-	}
+	v.items = pods.Items
 }
 
 func (v *PodView) Init(view *View) {
 	view.SetKeybinding('q', view.Quit)
 	view.SetKeybinding('k', view.PointerUp)
 	view.SetKeybinding('j', view.PointerDown)
+
+	v.load()
+}
+
+func (v *PodView) OnNamespaceUpdate(namespace string) {
+	if v.namespace == namespace {
+		return
+	}
+
+	v.namespace = namespace
+	v.TableView.Reset()
+	v.items = []v1.Pod{}
+
+	v.load()
+}
+
+func (v *PodView) OnVisible() {
+}
+
+func (v *PodView) OnInvisible() {
+}
+
+func (v *PodView) OnFocusOut() {
+}
+
+func (v *PodView) OnFocusIn() {
 }
 
 func (v *PodView) BeginPointerIndex() (x int) {

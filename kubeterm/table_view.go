@@ -40,6 +40,10 @@ func (vt *TableView) Lines() []string {
 	return lines
 }
 
+func (vt *TableView) Reset() {
+	vt.Rows = [][]interface{}{}
+}
+
 func (vt *TableView) Height() int {
 	return len(vt.Rows) + len(vt.Headers)
 }

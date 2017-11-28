@@ -14,6 +14,7 @@ type Window struct {
 	Height      int
 	Views       []*View
 	CurrentView *View
+	TopView     *View
 	stack       *stack
 }
 
@@ -99,12 +100,25 @@ func (w *Window) Quit() error {
 	return gocui.ErrQuit
 }
 
+func (w *Window) OnNamespaceUpdate(namespace string) {
+	for _, v := range w.Views {
+		v.OnNamespaceUpdate(namespace)
+	}
+}
+
 func (w *Window) SetViewOnTop(v *View) {
+	if w.TopView != nil {
+		w.TopView.OnInvisible()
+	}
+
 	_, err := w.gui.SetViewOnTop(v.Name())
 
 	if err != nil && err != gocui.ErrUnknownView {
 		log.Panicln(err)
 	}
+
+	w.TopView = v
+	w.TopView.OnVisible()
 }
 
 func (w *Window) SetCurrentView(v *View) {
