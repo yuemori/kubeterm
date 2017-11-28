@@ -16,6 +16,7 @@ func (v *MenuView) Init(view *View) {
 	view.SetKeybinding('q', func() error {
 		return GetWindow().Quit()
 	})
+
 	view.SetKeybinding('j', func() error {
 		if err := view.PointerDown(); err != nil {
 			return err
@@ -44,6 +45,8 @@ func (v *MenuView) Init(view *View) {
 		GetWindow().SetCurrentView(item)
 		return nil
 	})
+
+	view.KeepPointerOnFocusOut()
 }
 
 func (v *MenuView) BeginPointerIndex() (x int) {

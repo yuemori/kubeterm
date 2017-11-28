@@ -10,6 +10,8 @@ type View struct {
 	gui  *gocui.Gui
 	ctx  ViewContext
 	view *gocui.View
+
+	keepPointer bool
 }
 
 type ViewContext interface {
@@ -22,11 +24,15 @@ type ViewContext interface {
 }
 
 func NewView(gui *gocui.Gui, ctx ViewContext, view *gocui.View) *View {
-	return &View{gui, ctx, view}
+	return &View{gui, ctx, view, false}
 }
 
 func (v *View) Name() string {
 	return v.ctx.Name()
+}
+
+func (v *View) KeepPointerOnFocusOut() {
+	v.keepPointer = true
 }
 
 func (v *View) SetKeybinding(key interface{}, handler func() error) {
@@ -88,7 +94,9 @@ func (v *View) pointerReset() {
 }
 
 func (v *View) OnFocusIn() {
-	v.pointerReset()
+	if !v.keepPointer {
+		v.pointerReset()
+	}
 	v.view.Highlight = true
 	v.Update()
 }
